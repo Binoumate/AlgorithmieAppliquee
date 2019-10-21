@@ -29,7 +29,7 @@ def generateDefendersPositions(G):
     for i in list(G.nodes()):
         intersect = i[2].kickResult(problem.getOpponent(i[0]), i[1])
         for j in numpy.arange(min(problem.getOpponent(i[0])[0], intersect[0]), max(problem.getOpponent(i[0])[0], intersect[0]), problem.pos_step):
-            for k in numpy.arange(min(problem.getOpponent(i[1])[1], intersect[1]), max(problem.getOpponent(i[1])[1], intersect[1]), problem.pos_step):
+            for k in numpy.arange(min(problem.getOpponent(i[0])[1], intersect[1]), max(problem.getOpponent(i[0])[1], intersect[1]), problem.pos_step):
                 if(segmentCircleIntersection(problem.getOpponent(i[0]), intersect, [j, k], problem.robot_radius) is not None):
                     G.add_node((j,k))
                     G.add_edge(i, (j,k))
