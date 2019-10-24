@@ -10,6 +10,9 @@ import numpy
 from board import *
 from geometry import *
 
+liste1 = []
+liste2 = []
+
 if (len(sys.argv) < 2) :
     sys.exit("Usage: " + sys.argv[0] + " <problem.json>")
 
@@ -24,6 +27,7 @@ def generateOnTargetShots(G):
             for k in problem.goals:
                 if(k.kickResult(problem.getOpponent(i), j) is not None):
                     G.add_node((i, j, k))
+                    liste1.append((i,j,k))
 
 def generateDefendersPositions(G):
     for i in list(G.nodes()):
@@ -33,10 +37,24 @@ def generateDefendersPositions(G):
                 if(segmentCircleIntersection(problem.getOpponent(i[0]), intersect, [j, k], problem.robot_radius) is not None):
                     G.add_node((j,k))
                     G.add_edge(i, (j,k))
+                    liste2.append((j,k))
+
+def generateDegMax(G):
+    deg_max = 0
+    for i in list(G.nodes()):
+        deg = G.degree(i)
+        if deg > deg_max :
+            deg_max = deg
+    print(deg_max)
+
 
 G = nx.Graph()
 generateOnTargetShots(G)
 generateDefendersPositions(G)
+print(len(liste1))
+print(len(liste2))
+#print(liste1)
+#print(liste2)
 nx.draw(G)
 plt.show()
 
