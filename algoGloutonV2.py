@@ -10,11 +10,13 @@ import numpy
 from board import *
 from geometry import *
 from networkx.drawing.layout import *
+from copy import deepcopy
 
 #tuple(pos, goal, theta)
 attack = []
 #tuple(pos, goal, posAttaquant, done)
 defense = []
+archive = []
 
 if (len(sys.argv) < 2) :
 	sys.exit("Usage: " + sys.argv[0] + " <problem.json>")
@@ -30,21 +32,27 @@ def generateOnTargetShots():
 			for k in problem.goals:
 				if(k.kickResult(problem.getOpponent(i), j) is not None):
 					attack.append([problem.getOpponent(i), k, j])
-		
+
 def generateDefendersPositions():
 	for i in attack:
 		intersect = i[1].kickResult(i[0], i[2])
-		for j in numpy.arange( min(i[0][0], intersect[0]), max(i[0][0], intersect[0]), problem.pos_step):
-			for k in numpy.arange( min(i[0][1], intersect[1]), max(i[0][1], intersect[1]), problem.pos_step):
+		intersect[0] = round(intersect[0], 1)
+		intersect[1] = round(intersect[1], 1)
+		for j in numpy.arange( min(i[0][0], intersect[0])-problem.robot_radius*2, max(i[0][0], intersect[0])+problem.robot_radius*2, problem.pos_step):
+			for k in numpy.arange( min(i[0][1], intersect[1])-problem.robot_radius*2, max(i[0][1], intersect[1])+problem.robot_radius*2, problem.pos_step):
+				j = round(j, 1)
+				k = round(k, 1)
 				if(segmentCircleIntersection(i[0], intersect, [j, k], problem.robot_radius) is not None):
 					if(isPossiblePos(j,k)):
 						node = [[j,k], i[1], []]
 						existant = existantNode(node)
 						if(existant > -1):
 							defense[existant][2].append(i)
+							archive[existant][2].append(deepcopy(i))
 						else:
 							node[2].append(i)
 							defense.append(node)
+							archive.append(deepcopy(node))
 					
 def existantNode(n):
 	for i in range(len(defense)):
@@ -68,17 +76,18 @@ def isPossiblePos(x, y):
 
 def findMaxDegNode(a):
 	degMax = 0
-	node = None
-	for i in defense:
+	index = -1
+	for defe in range(len(defense)):
+		i = defense[defe]
 		if(len(i[2]) == 0):
 			continue
 		for j in i[2]:
 			if(j[0][0]==a[0][0] and j[0][1]==a[0][1] and j[2]==a[2]):
 				if(len(i[2])>degMax):
-					node = i
+					index = defe
 					degMax = len(i[2])
 					break
-	return node
+	return index
 
 def cleanAllBrothersOf(n):
 	for i in n[2]:
@@ -98,20 +107,37 @@ def cleanAllCollisionsOf(n):
 		if math.sqrt( (n[0][0]-i[0][0])**2 + (n[0][1]-i[0][1])**2) < problem.robot_radius*2:
 			i[2] = []
 
+def replace(ind, sol):
+	currentAttacks = archive[ind][2]
+	for defe in range(len(sol)):
+		defender = sol[defe]
+		if(len(currentAttacks) > len(archive[defender[1]][2])):
+			check = []
+			for i in archive[defender[1]][2]:
+				check.append(False)
+			for i in range(len(archive[defender[1]][2])):
+				for j in currentAttacks:
+					if(archive[defender[1]][2][i][0][0]==j[0][0] and archive[defender[1]][2][i][0][1]==j[0][1] and archive[defender[1]][2][i][1]==j[1] and archive[defender[1]][2][i][2]==j[2]):
+						check[i] = True
+			if(all(check)):
+				sol[defe] = [archive[ind][0], ind]
+				return
+
 def maxDegreeHeuristic():
 	generateOnTargetShots()
 	generateDefendersPositions()
 	sol = []
 	for i in attack:
-		maxNode = findMaxDegNode(i)
-		if(maxNode is None):
+		maxIndex = findMaxDegNode(i)
+		if(maxIndex == -1):
 			continue
-		print("current attack : [%f, %f], theta(%f)" % (i[0][0], i[0][1], i[2]))
-		print("maxdeg : [%f, %f]" % (maxNode[0][0], maxNode[0][1]))
-		sol.append(maxNode[0])
-		cleanAllBrothersOf(maxNode)
-		cleanAllCollisionsOf(maxNode)
-		maxNode[2] = []
+		print("deg(%i) = %i" % (maxIndex, len(defense[maxIndex][2])))
+		print(defense[maxIndex][2])
+		sol.append([defense[maxIndex][0], maxIndex])
+		cleanAllBrothersOf(defense[maxIndex])
+		cleanAllCollisionsOf(defense[maxIndex])
+		#replace(maxIndex, sol)
+		defense[maxIndex][2] = []
 	return sol
 		
 sol = maxDegreeHeuristic()
@@ -121,6 +147,6 @@ print("nb sol : %i" % (len(sol)))
 
 print("sol :")
 for i in sol:
-	print("[%f, %f]," % (i[0], i[1]))
+	print("[%f, %f]," % (i[0][0], i[0][1]))
 
 sys.exit()
