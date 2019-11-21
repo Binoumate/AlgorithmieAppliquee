@@ -36,12 +36,23 @@ def generateOnTargetShots():
 def generateDefendersPositions():
 	for i in attack:
 		intersect = i[1].kickResult(i[0], i[2])
-		intersect[0] = round(intersect[0], 1)
-		intersect[1] = round(intersect[1], 1)
-		for j in numpy.arange( min(i[0][0], intersect[0])-problem.robot_radius*2, max(i[0][0], intersect[0])+problem.robot_radius*2, problem.pos_step):
-			for k in numpy.arange( min(i[0][1], intersect[1])-problem.robot_radius*2, max(i[0][1], intersect[1])+problem.robot_radius*2, problem.pos_step):
-				j = round(j, 1)
-				k = round(k, 1)
+		minJ = min(i[0][0], intersect[0])-problem.robot_radius*2
+		maxJ = max(i[0][0], intersect[0])+problem.robot_radius*2
+		minK = min(i[0][1], intersect[1])-problem.robot_radius*2
+		maxK = max(i[0][1], intersect[1])+problem.robot_radius*2
+
+		minJ = round(minJ, 1)
+		minK = round(minK, 1)
+		maxJ = round(maxJ, 1)
+		maxK = round(maxK, 1)
+
+		minJ = minJ - (minJ%problem.pos_step)
+		minK = minK - (minK%problem.pos_step)
+		maxJ = maxJ - (maxJ%problem.pos_step)
+		maxK = maxK - (maxK%problem.pos_step)
+
+		for j in numpy.arange( minJ, maxJ, problem.pos_step):
+			for k in numpy.arange( minK, maxK, problem.pos_step):
 				if(segmentCircleIntersection(i[0], intersect, [j, k], problem.robot_radius) is not None):
 					if(isPossiblePos(j,k)):
 						node = [[j,k], i[1], []]
@@ -136,7 +147,7 @@ def maxDegreeHeuristic():
 		sol.append([defense[maxIndex][0], maxIndex])
 		cleanAllBrothersOf(defense[maxIndex])
 		cleanAllCollisionsOf(defense[maxIndex])
-		#replace(maxIndex, sol)
+		replace(maxIndex, sol)
 		defense[maxIndex][2] = []
 	return sol
 		
